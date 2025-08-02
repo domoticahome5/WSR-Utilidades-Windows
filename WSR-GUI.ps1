@@ -1,20 +1,27 @@
-
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 # Crear ventana principal
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Mantenimiento Windows 10/11 WSR - GUI"
-$form.Size = New-Object System.Drawing.Size(600, 700)
+$form.Size = New-Object System.Drawing.Size(600, 750)
 $form.StartPosition = "CenterScreen"
 
-# Crear panel scroll para contener botones
+# Crear pestañas
+$tabControl = New-Object System.Windows.Forms.TabControl
+$tabControl.Dock = "Fill"
+$form.Controls.Add($tabControl)
+
+# Crear pestaña principal
+$tabPrincipal = New-Object System.Windows.Forms.TabPage
+$tabPrincipal.Text = "Herramientas"
+$tabControl.Controls.Add($tabPrincipal)
+
 $panel = New-Object System.Windows.Forms.Panel
 $panel.Dock = "Fill"
 $panel.AutoScroll = $true
-$form.Controls.Add($panel)
+$tabPrincipal.Controls.Add($panel)
 
-# Función para crear botones
 function Add-Button {
     param($text, $posY, $action)
     $btn = New-Object System.Windows.Forms.Button
@@ -25,11 +32,65 @@ function Add-Button {
     $panel.Controls.Add($btn)
 }
 
-# Variables para posición de botones
-$y = 10
+# Crear pestaña de Programas
+$tabProgramas = New-Object System.Windows.Forms.TabPage
+$tabProgramas.Text = "Descargas"
+$tabControl.Controls.Add($tabProgramas)
+
+$programas = @(
+    @{Nombre="Google Chrome"; Url="https://dl.google.com/chrome/install/375.126/chrome_installer.exe"},
+    @{Nombre="Mozilla Firefox"; Url="https://download.mozilla.org/?product=firefox-latest&os=win&lang=es-ES"},
+    @{Nombre="WinRAR"; Url="https://www.rarlab.com/rar/winrar-x64-621es.exe"},
+    @{Nombre="VLC Player"; Url="https://get.videolan.org/vlc/3.0.20/win64/vlc-3.0.20-win64.exe"},
+    @{Nombre="Thunderbird"; Url="https://download.mozilla.org/?product=thunderbird-latest&os=win&lang=es-ES"}
+)
+
+$yList = 50
+$checkBoxes = @()
+foreach ($p in $programas) {
+    $chk = New-Object System.Windows.Forms.CheckBox
+    $chk.Text = $p.Nombre
+    $chk.Tag = $p.Url
+    $chk.AutoSize = $true
+    $chk.Location = New-Object System.Drawing.Point(20, $yList)
+    $tabProgramas.Controls.Add($chk)
+    $checkBoxes += $chk
+    $yList += 30
+}
+
+$progressBar = New-Object System.Windows.Forms.ProgressBar
+$progressBar.Location = New-Object System.Drawing.Point(20, $yList + 10)
+$progressBar.Size = New-Object System.Drawing.Size(520, 5)
+$tabProgramas.Controls.Add($progressBar)
+
+$btnDescargar = New-Object System.Windows.Forms.Button
+$btnDescargar.Text = "Descargar Seleccionados"
+$btnDescargar.Location = New-Object System.Drawing.Point(20, $yList + 40)
+$btnDescargar.Size = New-Object System.Drawing.Size(520, 30)
+$btnDescargar.Add_Click({
+    $seleccionados = $checkBoxes | Where-Object { $_.Checked }
+    foreach ($chk in $seleccionados) {
+        $nombre = $chk.Text
+        $url = $chk.Tag
+        $destino = "$env:TEMP\$($nombre -replace '\\s','_').exe"
+        $wc = New-Object System.Net.WebClient
+        $wc.DownloadProgressChanged += {
+            $progressBar.Value = $_.ProgressPercentage
+        }
+        $wc.DownloadFileAsync($url, $destino)
+        while ($wc.IsBusy) { Start-Sleep -Milliseconds 100 }
+        Start-Process $destino
+    }
+    [System.Windows.Forms.MessageBox]::Show("Descargas completadas.")
+})
+
+
+$tabProgramas.Controls.Add($btnDescargar)
+
+# Variables para botones en panel principal
+$y = 15
 $spacing = 40
 
-# Agregar botones según tu menú batch
 Add-Button "1. Limpiar Archivos Temporales" $y { LimpiarTemporales }
 $y += $spacing
 Add-Button "2. Ejecutar Liberador de Espacio en Disco" $y { Liberador }
@@ -44,7 +105,6 @@ Add-Button "6. Desfragmentador de Unidades Windows" $y { Desfragmentador }
 $y += $spacing
 Add-Button "7. Eliminar Archivos Temporales Y Cache De Sistema" $y { EliminarTemporalesCache }
 $y += $spacing
-
 Add-Button "8. Limpiar Cache DNS" $y { LimpiarCacheDNS }
 $y += $spacing
 Add-Button "9. Reiniciar Adaptador de Red" $y { ReiniciarAdaptadorRed }
@@ -55,14 +115,12 @@ Add-Button "11. Ver Direccion MAC (Redes)" $y { VerMAC }
 $y += $spacing
 Add-Button "12. Reparacion de red - automatica" $y { ReparacionRedAutomatica }
 $y += $spacing
-
 Add-Button "13. Reparar Archivos Del Sistema" $y { RepararSistema }
 $y += $spacing
 Add-Button "14. Escanear Archivos Corruptos (SFC /scannow) (Admin)" $y { SFC_Scan }
 $y += $spacing
 Add-Button "15. Comprobar Salud Windows (SFC y DISM) (Admin)" $y { ComprobarSalud }
 $y += $spacing
-
 Add-Button "16. Buscar Actualizaciones (Windows Update)" $y { AbrirWindowsUpdate }
 $y += $spacing
 Add-Button "17. Diagnostico Memoria RAM" $y { DiagnosticoRAM }
@@ -73,140 +131,7 @@ Add-Button "19. Actualizar Windows (Winget Upgrade)" $y { WingetActualizar }
 $y += $spacing
 Add-Button "20. Crear Punto de Restauracion" $y { CrearPuntoRestauracion }
 $y += $spacing
-
 Add-Button "00. Salir" $y { $form.Close() }
-
-# Funciones que ejecutan comandos
-
-function Ejecutar-ComandoElevado($scriptBlock) {
-    # Ejecutar con elevación
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = "powershell.exe"
-    $psi.Arguments = "-NoProfile -WindowStyle Hidden -Command & {Start-Process powershell -ArgumentList '-NoProfile -Command & { $($scriptBlock.ToString()) }' -Verb RunAs}"
-    $psi.UseShellExecute = $true
-    [Diagnostics.Process]::Start($psi) | Out-Null
-}
-
-function LimpiarTemporales {
-    [System.Windows.Forms.MessageBox]::Show("Limpiando archivos temporales...")
-    del /s /f /q $env:TEMP\*.* 2>$null
-    del /s /f /q C:\Windows\Temp\*.* 2>$null
-    del /s /f /q "$env:USERPROFILE\AppData\Local\Temp\*.*" 2>$null
-    [System.Windows.Forms.MessageBox]::Show("Archivos temporales eliminados.")
-}
-
-function Liberador {
-    Start-Process cleanmgr
-}
-
-function OptimizarDiscos {
-    Ejecutar-ComandoElevado { defrag C: /O }
-}
-
-function EjecutarMRT {
-    Start-Process mrt
-}
-
-function RepararDisco {
-    Ejecutar-ComandoElevado { chkdsk C: /f /r }
-}
-
-function Desfragmentador {
-    Start-Process dfrgui
-}
-
-function EliminarTemporalesCache {
-    $result = [System.Windows.Forms.MessageBox]::Show("¿Quieres eliminar archivos temporales y cache del sistema?","Confirmar", [System.Windows.Forms.MessageBoxButtons]::YesNo)
-    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
-        LimpiarTemporales
-    }
-}
-
-function LimpiarCacheDNS {
-    ipconfig /flushdns | Out-Null
-    [System.Windows.Forms.MessageBox]::Show("Cache DNS limpiada.")
-}
-
-function ReiniciarAdaptadorRed {
-    Ejecutar-ComandoElevado {
-        netsh interface set interface "Wi-Fi" admin=disable
-        netsh interface set interface "Wi-Fi" admin=enable
-    }
-    [System.Windows.Forms.MessageBox]::Show("Adaptador de red reiniciado.")
-}
-
-function MostrarInfoRed {
-    Start-Process powershell -ArgumentList "ipconfig /all; pause"
-}
-
-function VerMAC {
-    Start-Process powershell -ArgumentList "getmac /v; pause"
-}
-
-function ReparacionRedAutomatica {
-    Ejecutar-ComandoElevado {
-        ipconfig /release
-        ipconfig /renew
-        ipconfig /flushdns
-        netsh winsock reset
-        netsh int ip reset
-    }
-    $restart = [System.Windows.Forms.MessageBox]::Show("Configuración de red actualizada.`n¿Deseas reiniciar ahora?","Reinicio requerido",[System.Windows.Forms.MessageBoxButtons]::YesNo)
-    if ($restart -eq [System.Windows.Forms.DialogResult]::Yes) {
-        shutdown /r /t 5
-    }
-}
-
-function RepararSistema {
-    Ejecutar-ComandoElevado { sfc /scannow }
-}
-
-function SFC_Scan {
-    Ejecutar-ComandoElevado { sfc /scannow }
-}
-
-function ComprobarSalud {
-    Ejecutar-ComandoElevado {
-        sfc /scannow
-        DISM /Online /Cleanup-Image /RestoreHealth
-    }
-}
-
-function AbrirWindowsUpdate {
-    Start-Process ms-settings:windowsupdate
-}
-
-function DiagnosticoRAM {
-    Start-Process mdsched
-}
-
-function RepararWindowsUpdate {
-    Ejecutar-ComandoElevado {
-        net stop wuauserv
-        net stop bits
-        net stop cryptsvc
-        net stop msiserver
-        rd /s /q $env:windir\SoftwareDistribution
-        rd /s /q $env:windir\System32\catroot2
-        net start wuauserv
-        net start bits
-        net start cryptsvc
-        net start msiserver
-    }
-    [System.Windows.Forms.MessageBox]::Show("Restablecimiento de componentes de Windows Update completado.")
-}
-
-function WingetActualizar {
-    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        [System.Windows.Forms.MessageBox]::Show("Winget no está instalado. Instálalo desde Microsoft Store.")
-        return
-    }
-    Start-Process winget -ArgumentList "upgrade --all --include-unknown"
-}
-
-function CrearPuntoRestauracion {
-    Start-Process rstrui
-}
 
 # Mostrar el formulario
 $form.Topmost = $true
