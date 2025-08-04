@@ -48,11 +48,11 @@ Add-Button "8. Limpiar Cache DNS" $y { LimpiarCacheDNS }
 $y += $spacing
 Add-Button "9. Reiniciar Adaptador de Red" $y { ReiniciarAdaptadorRed }
 $y += $spacing
-Add-Button "10. Mostrar Información de Red (ipconfig /all)" $y { MostrarInfoRed }
+Add-Button "10. Mostrar Informacion de Red (ipconfig /all)" $y { MostrarInfoRed }
 $y += $spacing
-Add-Button "11. Ver Dirección MAC (Redes)" $y { VerMAC }
+Add-Button "11. Ver Direccion MAC (Redes)" $y { VerMAC }
 $y += $spacing
-Add-Button "12. Reparación de red - automática" $y { ReparacionRedAutomatica }
+Add-Button "12. Reparacion de red - automatica" $y { ReparacionRedAutomatica }
 $y += $spacing
 
 Add-Button "13. Reparar Archivos Del Sistema" $y { RepararSistema }
@@ -64,13 +64,13 @@ $y += $spacing
 
 Add-Button "16. Buscar Actualizaciones (Windows Update)" $y { AbrirWindowsUpdate }
 $y += $spacing
-Add-Button "17. Diagnóstico Memoria RAM" $y { DiagnosticoRAM }
+Add-Button "17. Diagnostico Memoria RAM" $y { DiagnosticoRAM }
 $y += $spacing
-Add-Button "18. Reparación de actualizaciones Windows" $y { RepararWindowsUpdate }
+Add-Button "18. Reparacion de actualizaciones Windows" $y { RepararWindowsUpdate }
 $y += $spacing
 Add-Button "19. Actualizar Windows (Winget Upgrade)" $y { WingetActualizar }
 $y += $spacing
-Add-Button "20. Crear Punto de Restauración" $y { CrearPuntoRestauracion }
+Add-Button "20. Crear Punto de Restauracion" $y { CrearPuntoRestauracion }
 $y += $spacing
 
 Add-Button "00. Salir" $y { $form.Close() }
