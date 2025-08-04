@@ -59,13 +59,13 @@ foreach ($p in $programas) {
 }
 
 $progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = New-Object System.Drawing.Point(20, $yList + 10)
+$progressBar.Location = New-Object System.Drawing.Point(20, ($yList + 10))
 $progressBar.Size = New-Object System.Drawing.Size(520, 5)
 $tabProgramas.Controls.Add($progressBar)
 
 $btnDescargar = New-Object System.Windows.Forms.Button
 $btnDescargar.Text = "Descargar Seleccionados"
-$btnDescargar.Location = New-Object System.Drawing.Point(20, $yList + 40)
+$btnDescargar.Location = New-Object System.Drawing.Point(20, ($yList + 40))
 $btnDescargar.Size = New-Object System.Drawing.Size(520, 30)
 $btnDescargar.Add_Click({
     $seleccionados = $checkBoxes | Where-Object { $_.Checked }
